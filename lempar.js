@@ -29,11 +29,11 @@
 %%
 /**************** End of %include directives **********************************/
 function Parse() {
-/* These constants specify the various numeric values for terminal symbols
-** in a format understandable to "makeheaders".
-***************** Begin makeheaders token definitions *************************/
+/**************** End of %include directives **********************************/
+/* These constants specify the various numeric values for terminal symbols.
+***************** Begin token definitions *************************************/
 %%
-/**************** End makeheaders token definitions ***************************/
+/**************** End token definitions ***************************************/
 
 /* The next sections is a series of control #defines.
 ** various aspects of the generated parser.
@@ -50,13 +50,15 @@ function Parse() {
 **                       defined, then do no error processing.
 **    YYNSTATE           the combined number of states.
 **    YYNRULE            the number of rules in the grammar
+**    YYNTOKEN           Number of terminal symbols
 **    YY_MAX_SHIFT       Maximum value for shift actions
 **    YY_MIN_SHIFTREDUCE Minimum value for shift-reduce actions
 **    YY_MAX_SHIFTREDUCE Maximum value for shift-reduce actions
-**    YY_MIN_REDUCE      Maximum value for reduce actions
 **    YY_ERROR_ACTION    The yy_action[] code for syntax error
 **    YY_ACCEPT_ACTION   The yy_action[] code for accept
 **    YY_NO_ACTION       The yy_action[] code for no-op
+**    YY_MIN_REDUCE      Minimum value for reduce actions
+**    YY_MAX_REDUCE      Maximum value for reduce actions
 */
 /************* Begin control #defines *****************************************/
 %%
@@ -89,9 +91,6 @@ if (!this.yytestcase) {
 **   N between YY_MIN_SHIFTREDUCE       Shift to an arbitrary state then
 **     and YY_MAX_SHIFTREDUCE           reduce by rule N-YY_MIN_SHIFTREDUCE.
 **
-**   N between YY_MIN_REDUCE            Reduce by rule N-YY_MIN_REDUCE
-**     and YY_MAX_REDUCE
-**
 **   N == YY_ERROR_ACTION               A syntax error has occurred.
 **
 **   N == YY_ACCEPT_ACTION              The parser accepts its input.
@@ -99,25 +98,22 @@ if (!this.yytestcase) {
 **   N == YY_NO_ACTION                  No such action.  Denotes unused
 **                                      slots in the yy_action[] table.
 **
+**   N between YY_MIN_REDUCE            Reduce by rule N-YY_MIN_REDUCE
+**     and YY_MAX_REDUCE
+**
 ** The action table is constructed as a single large table named yy_action[].
 ** Given state S and lookahead X, the action is computed as either:
 **
 **    (A)   N = yy_action[ yy_shift_ofst[S] + X ]
 **    (B)   N = yy_default[S]
 **
-** The (A) formula is preferred.  The B formula is used instead if:
-**    (1)  The yy_shift_ofst[S]+X value is out of range, or
-**    (2)  yy_lookahead[yy_shift_ofst[S]+X] is not equal to X, or
-**    (3)  yy_shift_ofst[S] equal YY_SHIFT_USE_DFLT.
-** (Implementation note: YY_SHIFT_USE_DFLT is chosen so that
-** YY_SHIFT_USE_DFLT+X will be out of range for all possible lookaheads X.
-** Hence only tests (1) and (2) need to be evaluated.)
+** The (A) formula is preferred.  The B formula is used instead if
+** yy_lookahead[yy_shift_ofst[S]+X] is not equal to X.
 **
 ** The formulas above are for computing the action when the lookahead is
 ** a terminal symbol.  If the lookahead is a non-terminal (as occurs after
 ** a reduce action) then the yy_reduce_ofst[] array is used in place of
-** the yy_shift_ofst[] array and YY_REDUCE_USE_DFLT is used in place of
-** YY_SHIFT_USE_DFLT.
+** the yy_shift_ofst[] array.
 **
 ** The following are the tables generated in this section:
 **
@@ -329,12 +325,10 @@ this.getStackPeak = function () {
 ** look-ahead token iLookAhead.
 */
 this.yy_find_shift_action = function (
-  iLookAhead     /* The look-ahead token */
+  iLookAhead,     /* The look-ahead token */
+  stateno         /* Current state number */
 ) {
-  var yytos = this.yystack[this.yyidx];
-  var stateno = yytos.stateno;
-
-  if (stateno >= this.YY_MIN_REDUCE) {
+  if (stateno > this.YY_MAX_SHIFT) {
     return stateno;
   }
 
@@ -342,14 +336,19 @@ this.yy_find_shift_action = function (
 
   do {
     var i = this.yy_shift_ofst[stateno];
+    // assert( i>=0 );
+    // assert( i<=YY_ACTTAB_COUNT );
+    // assert( i+YYNTOKEN<=(int)YY_NLOOKAHEAD );
     // assert( iLookAhead!=YYNOCODE );
+    // assert( iLookAhead < YYNTOKEN );
     i += iLookAhead;
-    if (i < 0 || i >= this.yy_action.length || this.yy_lookahead[i] != iLookAhead) {
+    // assert( i<(int)YY_NLOOKAHEAD );
+    if (this.yy_lookahead[i] != iLookAhead) {
       if (this.YYFALLBACK) {
         var iFallback;  /* Fallback token */
-        if ((iLookAhead < this.yyFallback.length)
-          && (iFallback = this.yyFallback[iLookAhead]) != 0
-        ) {
+        // assert( iLookAhead<sizeof(yyFallback)/sizeof(yyFallback[0]) );
+        iFallback = this.yyFallback[iLookAhead];
+        if (iFallback != 0) {
           if (this.yyTraceCallback) {
             this.trace("FALLBACK " + this.yyTokenName[iLookAhead] + " => " + this.yyTokenName[iFallback]);
           }
@@ -361,9 +360,8 @@ this.yy_find_shift_action = function (
 
       if (this.YYWILDCARD) {
         var j = i - iLookAhead + this.YYWILDCARD;
-        var cond1 = (this.YY_SHIFT_MIN + this.YYWILDCARD) < 0 ? j >= 0 : true;
-        var cond2 = (this.YY_SHIFT_MAX + this.YYWILDCARD) >= this.yy_action.length ? j < this.yy_action.length : true;
-        if (cond1 && cond2 && this.yy_lookahead[j] == this.YYWILDCARD && iLookAhead > 0) {
+        // assert( j<(int)(sizeof(yy_lookahead)/sizeof(yy_lookahead[0])) );
+        if (this.yy_lookahead[j] == this.YYWILDCARD && iLookAhead > 0) {
           if (this.yyTraceCallback) {
             this.trace("WILDCARD " + this.yyTokenName[iLookAhead] + " => " + this.yyTokenName[this.YYWILDCARD]);
           }
@@ -373,6 +371,7 @@ this.yy_find_shift_action = function (
 
       return this.yy_default[stateno];
     } else {
+      // assert( i>=0 && i<(int)(sizeof(yy_action)/sizeof(yy_action[0])) );
       return this.yy_action[i];
     }
   } while (true);
@@ -395,7 +394,6 @@ this.yy_find_reduce_action = function (
   }
 
   var i = this.yy_reduce_ofst[stateno];
-  // assert( i!=YY_REDUCE_USE_DFLT );
   // assert( iLookAhead!=YYNOCODE );
   i += iLookAhead;
 
@@ -432,13 +430,13 @@ this.yyStackOverflow = function () {
 /*
 ** Print tracing information for a SHIFT action
 */
-this.yyTraceShift = function (yyNewState) {
+this.yyTraceShift = function (yyNewState, zTag) {
   if (this.yyTraceCallback) {
     var yytos = this.yystack[this.yyidx];
     if (yyNewState < this.YYNSTATE) {
-      this.trace("Shift '" + this.yyTokenName[yytos.major] + "', go to state " + yyNewState);
+      this.trace(zTag + " '" + this.yyTokenName[yytos.major] + "', go to state " + yyNewState);
     } else {
-      this.trace("Shift '" + this.yyTokenName[yytos.major] + "'");
+      this.trace(zTag + " '" + this.yyTokenName[yytos.major] + "', pending reduce " + (yyNewState - this.YY_MIN_REDUCE));
     }
   }
 }
@@ -479,58 +477,37 @@ this.yy_shift = function (
   yytos.major = yyMajor;
   yytos.minor = yyMinor;
 
-  this.yyTraceShift(yyNewState);
+  this.yyTraceShift(yyNewState, "Shift");
 }
 
-/* The following table contains information about every rule that
-** is used during the reduce.
-*/
-//{
-//  lhs,      /* Symbol on the left-hand side of the rule */
-//  nrhs,     /* Number of right-hand side symbols in the rule */
-//}
-this.yyRuleInfo = [
+/* For rule J, yyRuleInfoLhs[J] contains the symbol on the left-hand side
+** of that rule */
+this.yyRuleInfoLhs = [
+%%
+];
+
+/* For rule J, yyRuleInfoNRhs[J] contains the negative of the number
+** of symbols on the right-hand side of that rule. */
+this.yyRuleInfoNRhs = [
 %%
 ];
 
 /*
 ** Perform a reduce action and the shift that must immediately
 ** follow the reduce.
+**
+** The yyLookahead and yyLookaheadToken parameters provide reduce actions
+** access to the lookahead token (if any).  The yyLookahead will be YYNOCODE
+** if the lookahead token has already been consumed.  As this procedure is
+** only called from one place, optimizing compilers will in-line it, which
+** means that the extra parameters have no performance impact.
 */
 this.yy_reduce = function (
-  yyruleno        /* Number of the rule by which to reduce */
+  yyruleno         /* Number of the rule by which to reduce */,
+  yyLookahead,     /* Lookahead token, or YYNOCODE if none */
+  yyLookaheadToken /* Value of the lookahead token */
 ){
   var yymsp = this.yystack[this.yyidx]; /* The top of the parser's stack */
-
-  if (yyruleno < this.yyRuleName.length) {
-    var yysize = this.yyRuleInfo[yyruleno].nrhs;
-    var ruleName = this.yyRuleName[yyruleno];
-    var newStateNo = this.yystack[this.yyidx - yysize].stateno;
-    if (this.yyTraceCallback) {
-      this.trace("Reduce [" + ruleName + "], go to state " + newStateNo + ".");
-    }
-  }
-
-  /* Check that the stack is large enough to grow by a single entry
-  ** if the RHS of the rule is empty.  This ensures that there is room
-  ** enough on the stack to push the LHS value */
-  if (this.yyRuleInfo[yyruleno].nrhs == 0) {
-    if (this.yyidx > this.yyhwm) {
-      this.yyhwm++;
-      // assert( yypParser->yyhwm == (int)(yypParser->yytos - yypParser->yystack));
-    }
-    if (this.YYSTACKDEPTH > 0) {
-      if (this.yyidx >= this.YYSTACKDEPTH - 1) {
-        this.yyStackOverflow();
-        return;
-      }
-    } else {
-      if (this.yyidx >= this.yystack.length - 1) {
-        this.yyGrowStack();
-        yymsp = this.yystack[this.yyidx];
-      }
-    }
-  }
 
   var yylhsminor;
   switch (yyruleno) {
@@ -546,28 +523,28 @@ this.yy_reduce = function (
 %%
 /********** End reduce actions ************************************************/
   };
-  // assert( yyruleno<sizeof(yyRuleInfo)/sizeof(yyRuleInfo[0]) );
+  // assert( yyruleno<sizeof(yyRuleInfoLhs)/sizeof(yyRuleInfoLhs[0]) );
 
-  var yygoto = this.yyRuleInfo[yyruleno].lhs;    /* The next state */
-  var yysize = this.yyRuleInfo[yyruleno].nrhs;   /* Amount to pop the stack */
+  var yygoto = this.yyRuleInfoLhs[yyruleno];    /* The next state */
+  var yysize = this.yyRuleInfoNRhs[yyruleno];   /* Amount to pop the stack */
   var yyact = this.yy_find_reduce_action(   /* The next action */
-    this.yystack[this.yyidx - yysize].stateno,
+    this.yystack[this.yyidx + yysize].stateno,
     yygoto
   );
-  if (yyact <= this.YY_MAX_SHIFTREDUCE) {
-    if (yyact > this.YY_MAX_SHIFT) {
-      yyact += this.YY_MIN_REDUCE - this.YY_MIN_SHIFTREDUCE;
-    }
-    this.yyidx -= yysize - 1;
+
+  /* There are no SHIFTREDUCE actions on nonterminals because the table
+  ** generator has simplified them to pure REDUCE actions. */
+  // assert( !(yyact>YY_MAX_SHIFT && yyact<=YY_MAX_SHIFTREDUCE) );
+
+  /* It is not possible for a REDUCE to be followed by an error */
+  // assert( yyact!=YY_ERROR_ACTION );
+
+    this.yyidx += yysize + 1;
     yymsp = this.yystack[this.yyidx];
     yymsp.stateno = yyact;
     yymsp.major = yygoto;
-    this.yyTraceShift(yyact);
-  } else {
-    // assert( yyact == YY_ACCEPT_ACTION );
-    this.yyidx -= yysize;
-    this.yy_accept();
-  }
+    this.yyTraceShift(yyact, "... then shift");
+    return yyact;
 }
 
 /*
@@ -653,20 +630,42 @@ this.parse = function (
 
   yyendofinput = yymajor == 0;
 
+  yyact = this.yystack[this.yyidx].stateno;
   if (this.yyTraceCallback) {
-    this.trace("Input '" + this.yyTokenName[yymajor] + "'");
+    if (yyact < this.YY_MIN_REDUCE) {
+      this.trace("Input '" + this.yyTokenName[yymajor] + "' in state " + yyact);
+    } else {
+      this.trace("Input '" + this.yyTokenName[yymajor] + "' with pending reduce " + (yyact - this.YY_MIN_REDUCE));
+    }
   }
 
-  do {
-    yyact = this.yy_find_shift_action(yymajor);
-    if (yyact <= this.YY_MAX_SHIFTREDUCE) { // check me?
+  while (true) { /* Exit by "break" */
+    // assert( yypParser->yytos>=yypParser->yystack );
+    // assert( yyact==yypParser->yytos->stateno );
+    yyact = this.yy_find_shift_action(yymajor, yyact);
+    if (yyact >= this.YY_MIN_REDUCE) {
+      var yyruleno = yyact - this.YY_MIN_REDUCE;
+      // assert( yyruleno<(int)(sizeof(yyRuleName)/sizeof(yyRuleName[0])) );
+      if (this.yyTraceCallback) {
+        var yysize = this.yyRuleInfoNRhs[yyruleno];
+        this.trace(
+          "Reduce " + yyruleno +
+          " [" + this.yyRuleName[yyruleno] + "]" +
+          (yyruleno < this.YYNRULE_WITH_ACTION ? "" : " without external action") +
+          (!yysize ? "" : ", pop back to state " + this.yystack[this.yyidx + yysize].stateno) +
+          ".");
+      }
+      yyact = this.yy_reduce(yyruleno, yymajor, yyminor);
+    } else if (yyact <= this.YY_MAX_SHIFTREDUCE) {
       this.yy_shift(yyact, yymajor, yyminor);
       if (!this.YYNOERRORRECOVERY) {
         this.yyerrcnt--;
       }
-      yymajor = this.YYNOCODE;
-    } else if (yyact <= this.YY_MAX_REDUCE) { // check me?
-      this.yy_reduce(yyact - this.YY_MIN_REDUCE); // check me?
+      break;
+    } else if (yyact == this.YY_ACCEPT_ACTION) {
+      this.yyidx--;
+      this.yy_accept();
+      return;
     } else {
       // assert( yyact == YY_ERROR_ACTION );
       if (this.yyTraceCallback) {
@@ -704,10 +703,9 @@ this.parse = function (
           yymajor = this.YYNOCODE;
         } else {
           while (this.yyidx >= 0
-              && yymx != this.YYERRORSYMBOL
               && (yyact = this.yy_find_reduce_action(
                           this.yystack[this.yyidx].stateno,
-                          this.YYERRORSYMBOL)) >= this.YY_MIN_REDUCE // check me?
+                          this.YYERRORSYMBOL)) > this.YY_MAX_SHIFTREDUCE
           ) {
             this.yy_pop_parser_stack();
           }
@@ -724,6 +722,8 @@ this.parse = function (
         }
         this.yyerrcnt = 3;
         yyerrorhit = 1;
+        if (yymajor == this.YYNOCODE) break;
+        yyact = this.yystack[this.yyidx].stateno;
       } else if (this.YYNOERRORRECOVERY) {
         /* If the YYNOERRORRECOVERY macro is defined, then do not attempt to
         ** do any kind of error recovery.  Instead, simply invoke the syntax
@@ -734,7 +734,7 @@ this.parse = function (
         */
         this.yy_syntax_error(yymajor, yyminor);
         this.yy_destructor(yymajor, yyminor);
-        yymajor = this.YYNOCODE;
+        break;
       } else {  /* YYERRORSYMBOL is not defined */
         /* This is what we do if the grammar does not define ERROR:
         **
@@ -756,10 +756,10 @@ this.parse = function (
             this.yyerrcnt = -1;
           }
         }
-        yymajor = this.YYNOCODE;
+        break;
       }
     }
-  } while (yymajor != this.YYNOCODE && this.yyidx > 0);
+  }
 
   if (this.yyTraceCallback) {
     var remainingTokens = [];
