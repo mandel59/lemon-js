@@ -4510,9 +4510,6 @@ void ReportTable(
     fprintf(out,"this.YYERRORSYMBOL = %d;\n",lemp->errsym->index); lineno++;
     // fprintf(out,"#define YYERRSYMDT yy%d\n",lemp->errsym->dtnum); lineno++;
   }
-  if( lemp->has_fallback ){
-    fprintf(out,"this.YYFALLBACK = 1;\n");  lineno++;
-  }
   fprintf(out,"this.YYFALLBACK = %s;\n", lemp->has_fallback ? "true" : "false");  lineno++;
 
   /* Compute the action table, but do not output it yet.  The action
