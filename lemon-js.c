@@ -4913,12 +4913,12 @@ void ReportTable(
     fprintf(out,"      /* (%d) ", rp->iRule);
     writeRuleText(out, rp);
     if( rp->neverReduce ){
-      fprintf(out, " (NEVER REDUCES) */ assert(yyruleno!=%d);\n",
+      fprintf(out, " (NEVER REDUCES) */ // assert(yyruleno!=%d);\n",
               rp->iRule); lineno++;
     }else if( rp->doesReduce ){
       fprintf(out, " */ this.yytestcase(yyruleno==%d);\n", rp->iRule); lineno++;
     }else{
-      fprintf(out, " (OPTIMIZED OUT) */ assert(yyruleno!=%d);\n",
+      fprintf(out, " (OPTIMIZED OUT) */ // assert(yyruleno!=%d);\n",
               rp->iRule); lineno++;
     }
   }
