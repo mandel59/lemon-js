@@ -352,10 +352,10 @@ this.yy_find_shift_action = function (
           if (this.yyTraceCallback) {
             this.trace("FALLBACK " + this.yyTokenName[iLookAhead] + " => " + this.yyTokenName[iFallback]);
           }
+          // assert( yyFallback[iFallback]==0 ); /* Fallback loop must terminate */
+          iLookAhead = iFallback;
+          continue;
         }
-        // assert( yyFallback[iFallback]==0 ); /* Fallback loop must terminate */
-        iLookAhead = iFallback;
-        continue;
       }
 
       if (this.YYWILDCARD) {
