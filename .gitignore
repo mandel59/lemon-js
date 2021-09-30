@@ -2,6 +2,8 @@ lemon
 lemon-js
 lemon.exe
 lemon-js.exe
+lemon-js.js
+lemon-js.wasm
 examples/*.out
 examples/*-c.c
 examples/*-c.h
