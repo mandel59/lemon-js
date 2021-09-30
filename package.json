@@ -9,6 +9,8 @@
   "files": [
     "lemon-js.js",
     "lemon-js.wasm",
+    "lemon-js.sh",
+    "lempar.js",
     "lexer/lexer.js",
     "README.md"
   ],
