@@ -4,7 +4,7 @@
   "description": "Lemon.JS is an LALR(1) parser generator for JavaScript based on Lemon parser generator for C included in SQLite package distribution.",
   "main": "lemon-js.js",
   "bin": {
-    "lemon-js": ".bin/lemon-js.sh"
+    "lemon-js": "boot-lemon-js.js"
   },
   "files": [
     "lemon-js.js",
