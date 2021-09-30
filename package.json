@@ -17,7 +17,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "emcc -s EXIT_RUNTIME=1 -s NODERAWFS=1 -o lemon-js.js lemon-js.c"
+    "prepare": "emcc -s EXIT_RUNTIME=1 -s NODERAWFS=1 -o lemon-js.js lemon-js.c"
   },
   "repository": {
     "type": "git",
