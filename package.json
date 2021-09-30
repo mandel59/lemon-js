@@ -1,0 +1,33 @@
+{
+  "name": "@mandel59/lemon-js",
+  "version": "0.1.0",
+  "description": "Lemon.JS is an LALR(1) parser generator for JavaScript based on Lemon parser generator for C included in SQLite package distribution.",
+  "main": "lemon-js.js",
+  "bin": {
+    "lemon-js": "./lemon-js.js"
+  },
+  "files": [
+    "lemon-js.js",
+    "lemon-js.wasm",
+    "lexer/lexer.js",
+    "README.md"
+  ],
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "emcc -s EXIT_RUNTIME=1 -s NODERAWFS=1 -o lemon-js.js lemon-js.c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mandel59/lemon-js.git"
+  },
+  "keywords": [],
+  "author": "Ryusei Yamaguchi",
+  "license": "blessing",
+  "bugs": {
+    "url": "https://github.com/mandel59/lemon-js/issues"
+  },
+  "homepage": "https://github.com/mandel59/lemon-js#readme"
+}
